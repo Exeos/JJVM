@@ -36,7 +36,7 @@ public class TypedStack {
     }
 
     public void push(byte[] value, byte type) {
-        if (stackDataPointer + value.length >= stackData.length || stackEntryPointer >= stackEntries.length) {
+        if (stackDataPointer + value.length > stackData.length || stackEntryPointer >= stackEntries.length) {
             throw new RuntimeException("Stack Exhausted");
         }
 
@@ -70,9 +70,6 @@ public class TypedStack {
         }
 
         StackEntryMeta topEntry = stackEntries[stackEntryPointer - 1];
-        if (stackData.length < topEntry.length) {
-            throw new RuntimeException("Stack to small for operation");
-        }
 
         byte[] entryData = new byte[topEntry.length];
         System.arraycopy(stackData, topEntry.start, entryData, 0, topEntry.length);
@@ -83,15 +80,5 @@ public class TypedStack {
         return new StackEntry<>(entryData, topEntry.type);
     }
 
-    private static class StackEntryMeta {
-        public final byte type;
-        public int start;
-        public int length;
-
-        public StackEntryMeta(byte type, int start, int length) {
-            this.type = type;
-            this.start = start;
-            this.length = length;
-        }
-    }
+    private record StackEntryMeta(byte type, int start, int length) {}
 }

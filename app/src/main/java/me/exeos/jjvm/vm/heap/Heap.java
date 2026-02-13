@@ -7,7 +7,7 @@ public class Heap {
     private final HashMap<Long, HeapRef> heap = new HashMap<>();
     long heapIndex = 0;
 
-    public <T> long putRef(byte type, T value) {
+    public <T> long createRef(byte type, T value) {
         heap.put(heapIndex++, new HeapRef<T>(type, value));
 
         return heapIndex - 1;

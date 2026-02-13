@@ -7,10 +7,6 @@ import me.exeos.jjvm.vm.stack.StackEntry;
 import me.exeos.jjvm.vm.stack.StackTypes;
 import me.exeos.jjvm.vm.stack.TypedStack;
 
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.lang.reflect.Type;
-
 public class JJVM {
 
     /**
@@ -20,53 +16,44 @@ public class JJVM {
         Heap heap = new Heap();
         TypedStack stack = new TypedStack(maxStackSize, maxStackEntries);
 
-        ByteArrayInputStream bytecodeStream = new ByteArrayInputStream(bytecode);
-        while (bytecodeStream.available() > 0) {
-            byte byteToInterpret = (byte) bytecodeStream.read();
+        int pc = 0;
+        while (pc < bytecode.length) {
+            int byteToInterpret = bytecode[pc++] & 0xFF;
 
             switch (byteToInterpret) {
                 case OpCodes.NOP -> {}
                 case OpCodes.POP -> stack.pop();
                 case OpCodes.PUSH_I8 -> {
-                    if (bytecodeStream.available() < 1) {
-                        throw new RuntimeException("Expected 1 operand. Read: " + bytecodeStream.available());
-                    }
-
-                    stack.push((byte) bytecodeStream.read(), StackTypes.INT_8);
+                    ensureAvailable(bytecode, pc, 1);
+                    stack.push(bytecode[pc++], StackTypes.INT_8);
                 }
                 case OpCodes.PUSH_I32 -> {
-                    // todo use constant pool for this
-                    if (bytecodeStream.available() < 4) {
-                        throw new RuntimeException("Expected 4 operands. Read: " + bytecodeStream.available());
-                    }
+                    ensureAvailable(bytecode, pc, 4);
 
-                    try {
-                        stack.push(bytecodeStream.readNBytes(4), StackTypes.INT_32);
-                    } catch (IOException e) {
-                        throw new RuntimeException("Failed to read operands from bytecode stream");
-                    }
+                    stack.push(extractOperands(bytecode, pc, 4), StackTypes.INT_32);
+                    pc += 4;
                 }
                 case OpCodes.ACONST_NULL -> stack.push((byte) 0, StackTypes.NULL);
                 case OpCodes.NEWARRAY -> {
-                    if (bytecodeStream.available() < 1) {
-                        throw new RuntimeException("Expected 1 operand. Read: " + bytecodeStream.available());
+                    ensureAvailable(bytecode, pc, 1);
+
+                    StackEntry<byte[]> arrLenStackEntry = stack.popWide();
+                    if (arrLenStackEntry.type() < StackTypes.INT_8 || arrLenStackEntry.type() > StackTypes.INT_32) {
+                        throw new RuntimeException("Invalid type for operation: " + arrLenStackEntry.type());
                     }
 
-                    StackEntry<byte[]> countEntry = stack.popWide();
-                    if (countEntry.type() < StackTypes.INT_8 || countEntry.type() > StackTypes.INT_32) {
-                        throw new RuntimeException("Invalid type for operation: " + countEntry.type());
-                    }
-
-                    byte operand = (byte) bytecodeStream.read();
+                    byte operand = bytecode[pc++];
                     if (operand < Types.T_BOOLEAN || operand > Types.T_LONG) {
                         throw new RuntimeException("Invalid type for operation: " + operand);
                     }
 
-                    int arrSize = ConversionUntil.bytesToInt32(countEntry.data());
-                    long heapRef = heap.putRef(operand, new int[arrSize]);
+                    // TODO: this might not work for non 32bit ints
+                    int arrSize = ConversionUntil.bytesToInt32(arrLenStackEntry.data());
+                    long heapRef = heap.createRef(operand, new int[arrSize]);
 
                     stack.push(ConversionUntil.int64ToBytes(heapRef), StackTypes.ARRAY_REF);
                 }
+                // DEBUG INSN
                 case OpCodes.PRINT_SP -> {
                     StackEntry<byte[]> frame = stack.popWide();
 
@@ -79,5 +66,18 @@ public class JJVM {
                 default -> throw new RuntimeException("Invalid OPCODE: " + byteToInterpret);
             }
         }
+    }
+
+    private static void ensureAvailable(byte[] bytecode, int pc, int len) {
+        if (bytecode.length - pc < len) {
+            throw new RuntimeException("Unexpected end of Bytecode. Required " + len + " bytes at PC: " + pc);
+        }
+    }
+
+    private static byte[] extractOperands(byte[] bytecode, int pc, int operands) {
+        byte[] operandArr = new byte[operands];
+        System.arraycopy(bytecode, pc, operandArr, 0, operands);
+
+        return operandArr;
     }
 }
