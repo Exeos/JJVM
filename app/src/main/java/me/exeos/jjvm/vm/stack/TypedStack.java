@@ -1,6 +1,6 @@
 package me.exeos.jjvm.vm.stack;
 
-import me.exeos.jjvm.utils.ConversionUntil;
+import me.exeos.jjvm.helpers.ByteHelper;
 
 /**
  * Typed Stack
@@ -66,11 +66,11 @@ public class TypedStack {
     }
 
     public int popI32() {
-        return ConversionUntil.bytesToInt32(pop());
+        return ByteHelper.bytesToInt32(pop());
     }
 
     public long popI64() {
-        return ConversionUntil.bytesToInt64(pop());
+        return ByteHelper.bytesToInt64(pop());
     }
 
     public byte peekType() {
