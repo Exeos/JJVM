@@ -1,5 +1,7 @@
 package me.exeos.jjvm.vm.stack;
 
+import me.exeos.jjvm.utils.ConversionUntil;
+
 /**
  * Typed Stack
  * Popping always decreases stackEntries by 1 and stackData based on the length of the popped StackEntry
@@ -47,24 +49,7 @@ public class TypedStack {
         stackEntryPointer++;
     }
 
-    public StackEntry<Byte> pop() {
-        if (stackDataPointer == 0 || stackEntryPointer == 0) {
-            throw new RuntimeException("Can't pop from empty stack");
-        }
-
-        StackEntryMeta topEntry = stackEntries[stackEntryPointer - 1];
-
-        if (topEntry.length > 1) {
-            throw new RuntimeException("Can't pop single byte on multi byte entry");
-        }
-
-        stackDataPointer -= topEntry.length;
-        stackEntryPointer--;
-
-        return new StackEntry<>(stackData[topEntry.start], topEntry.type);
-    }
-
-    public StackEntry<byte[]> popWide() {
+    public byte[] pop() {
         if (stackDataPointer == 0 || stackEntryPointer == 0) {
             throw new RuntimeException("Can't pop from empty stack");
         }
@@ -77,7 +62,23 @@ public class TypedStack {
         stackDataPointer -= entryData.length;
         stackEntryPointer--;
 
-        return new StackEntry<>(entryData, topEntry.type);
+        return entryData;
+    }
+
+    public int popI32() {
+        return ConversionUntil.bytesToInt32(pop());
+    }
+
+    public long popI64() {
+        return ConversionUntil.bytesToInt64(pop());
+    }
+
+    public byte peekType() {
+        if (stackEntryPointer == 0) {
+            throw new IllegalStateException("Can't peek on empty stack");
+        }
+
+        return stackEntries[stackEntryPointer].type();
     }
 
     private record StackEntryMeta(byte type, int start, int length) {}

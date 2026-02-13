@@ -3,7 +3,6 @@ package me.exeos.jjvm.vm;
 import me.exeos.jjvm.utils.ConversionUntil;
 import me.exeos.jjvm.vm.bytecode.OpCodes;
 import me.exeos.jjvm.vm.heap.Heap;
-import me.exeos.jjvm.vm.stack.StackEntry;
 import me.exeos.jjvm.vm.stack.StackTypes;
 import me.exeos.jjvm.vm.stack.TypedStack;
 
@@ -37,9 +36,9 @@ public class JJVM {
                 case OpCodes.NEWARRAY -> {
                     ensureAvailable(bytecode, pc, 1);
 
-                    StackEntry<byte[]> arrLenStackEntry = stack.popWide();
-                    if (arrLenStackEntry.type() < StackTypes.INT_8 || arrLenStackEntry.type() > StackTypes.INT_32) {
-                        throw new RuntimeException("Invalid type for operation: " + arrLenStackEntry.type());
+                    byte stackEntryType = stack.peekType();
+                    if (stackEntryType < StackTypes.INT_8 || stackEntryType > StackTypes.INT_32) {
+                        throw new RuntimeException("Invalid type for operation: " + stackEntryType);
                     }
 
                     byte operand = bytecode[pc++];
@@ -48,20 +47,17 @@ public class JJVM {
                     }
 
                     // TODO: this might not work for non 32bit ints
-                    int arrSize = ConversionUntil.bytesToInt32(arrLenStackEntry.data());
-                    long heapRef = heap.createRef(operand, new int[arrSize]);
+                    long heapRef = heap.createRef(operand, new int[stack.popI32()]);
 
                     stack.push(ConversionUntil.int64ToBytes(heapRef), StackTypes.ARRAY_REF);
                 }
                 // DEBUG INSN
                 case OpCodes.PRINT_SP -> {
-                    StackEntry<byte[]> frame = stack.popWide();
-
-                    if (frame.type() != StackTypes.INT_32 || frame.data().length != 4) {
+                    if (stack.peekType() != StackTypes.INT_32) {
                         throw new RuntimeException("Invalid stack frame");
                     }
 
-                    System.out.println("value: " + ConversionUntil.bytesToInt32(frame.data()));
+                    System.out.println("value: " + stack.popI32());
                 }
                 default -> throw new RuntimeException("Invalid OPCODE: " + byteToInterpret);
             }
