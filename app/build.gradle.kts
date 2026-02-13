@@ -2,6 +2,9 @@ plugins {
     application
 }
 
+group = "me.exeos"
+version = "1.0-SNAPSHOT"
+
 repositories {
     mavenCentral()
 }

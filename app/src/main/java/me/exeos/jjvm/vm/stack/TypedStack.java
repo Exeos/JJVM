@@ -4,11 +4,10 @@ package me.exeos.jjvm.vm.stack;
  * Typed Stack
  * Popping always decreases stackEntries by 1 and stackData based on the length of the popped StackEntry
  * Pushing always increases stackEntries by 1 and stackData based on the length of the actual value stored
- *
+ * <p>
  * need to explain this better, so I won't forget what this shit does 🥀
  */
 public class TypedStack {
-
 
     private final byte[] stackData;
     private final StackEntryMeta[] stackEntries;
