@@ -9,6 +9,7 @@ import me.exeos.jjvm.vm.stack.TypedStack;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.lang.reflect.Type;
 
 public class JJVM {
 
@@ -52,7 +53,7 @@ public class JJVM {
                     }
 
                     StackEntry<byte[]> countEntry = stack.popWide();
-                    if (countEntry.type() != StackTypes.INT_64) {
+                    if (countEntry.type() < StackTypes.INT_8 || countEntry.type() > StackTypes.INT_32) {
                         throw new RuntimeException("Invalid type for operation: " + countEntry.type());
                     }
 

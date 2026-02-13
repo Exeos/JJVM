@@ -10,7 +10,7 @@ public class Main {
 
     public static void main(String[] args) {
         try {
-            JJVM.exec(concat(new PushInstruction(67).getBytecode(), OpCodes.PRINT_SP), 20, 20);
+            JJVM.exec(concat(new PushInstruction(67).getBytecode(), OpCodes.POP), 20, 20);
         } catch (RuntimeException e) {
             System.out.println("VM exited with error: " + e);
         }

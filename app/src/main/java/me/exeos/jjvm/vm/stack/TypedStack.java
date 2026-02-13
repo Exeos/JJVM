@@ -54,6 +54,10 @@ public class TypedStack {
 
         StackEntryMeta topEntry = stackEntries[stackEntryPointer - 1];
 
+        if (topEntry.length > 1) {
+            throw new RuntimeException("Can't pop single byte on multi byte entry");
+        }
+
         stackDataPointer -= topEntry.length;
         stackEntryPointer--;
 
@@ -72,6 +76,9 @@ public class TypedStack {
 
         byte[] entryData = new byte[topEntry.length];
         System.arraycopy(stackData, topEntry.start, entryData, 0, topEntry.length);
+
+        stackDataPointer -= entryData.length;
+        stackEntryPointer--;
 
         return new StackEntry<>(entryData, topEntry.type);
     }
