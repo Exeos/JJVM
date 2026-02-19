@@ -4,12 +4,12 @@ import me.exeos.jjvm.helpers.ByteHelper;
 import me.exeos.jjvm.vm.bytecode.OpCodes;
 import me.exeos.jjvm.vm.bytecode.insn.AbstractInstruction;
 
-public class PushI32Instruction extends AbstractInstruction {
+public class PushI64Instruction extends AbstractInstruction {
 
     public final short valueCpIndex;
 
-    public PushI32Instruction(short valueCpIndex) {
-        super(OpCodes.PUSH_I32);
+    public PushI64Instruction(short valueCpIndex) {
+        super(OpCodes.PUSH_I64);
         this.valueCpIndex = valueCpIndex;
     }
 

@@ -1,6 +1,7 @@
 package me.exeos.jjvm.vm.stack;
 
 import me.exeos.jjvm.helpers.ByteHelper;
+import me.exeos.jjvm.vm.TypeCheckFunction;
 
 /**
  * Typed Stack
@@ -56,8 +57,8 @@ public class TypedStack {
 
         StackEntryMeta topEntry = stackEntries[stackEntryPointer - 1];
 
-        byte[] entryData = new byte[topEntry.length];
-        System.arraycopy(stackData, topEntry.start, entryData, 0, topEntry.length);
+        byte[] entryData = new byte[topEntry.length()];
+        System.arraycopy(stackData, topEntry.start(), entryData, 0, topEntry.length());
 
         stackDataPointer -= entryData.length;
         stackEntryPointer--;
@@ -73,13 +74,17 @@ public class TypedStack {
         return ByteHelper.bytesToInt64(pop());
     }
 
-    public byte peekType() {
+    public byte type() {
         if (stackEntryPointer == 0) {
             throw new IllegalStateException("Can't peek on empty stack");
         }
 
-        return stackEntries[stackEntryPointer].type();
+        return stackEntries[stackEntryPointer - 1].type();
     }
 
-    private record StackEntryMeta(byte type, int start, int length) {}
+    public void ensureType(TypeCheckFunction checkFunction) {
+        if (!checkFunction.check(type())) {
+            throw new IllegalStateException("Invalid stack type.");
+        }
+    }
 }

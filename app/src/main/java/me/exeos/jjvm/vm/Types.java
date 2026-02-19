@@ -8,7 +8,9 @@ public class Types {
     public static final byte INT_32 = 0x5;
     public static final byte INT_64 = 0x6;
 
+    public static final byte OBJECT = 0x7;
+
     /* Stack only types */
-    public static final byte S_NULL_REF = 0x7;
-    public static final byte S_ARRAY_REF = 0x8;
+    public static final byte S_NULL_REF = 0x8;
+    public static final byte S_ARRAY_REF = 0x9;
 }

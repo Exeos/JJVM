@@ -19,6 +19,9 @@ public class ByteHelper {
 
     public static int bytesToInt32Flexible(byte[] bytes) {
         switch (bytes.length) {
+            case 1 -> {
+                return bytes[0];
+            }
             case 2 -> {
                 return bytesToInt16(bytes);
             }
