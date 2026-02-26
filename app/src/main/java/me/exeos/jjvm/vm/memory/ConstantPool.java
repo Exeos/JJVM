@@ -20,4 +20,17 @@ public class ConstantPool {
 
         return (T) ref.value;
     }
+
+    public Object getConstant(short index) {
+        TypedValue ref = constants.get(index);
+        if (ref == null) {
+            throw new NullPointerException("Constant doesn't exist");
+        }
+
+        return ref.value;
+    }
+
+    public byte getConstantType(short index) {
+        return constants.get(index).type;
+    }
 }

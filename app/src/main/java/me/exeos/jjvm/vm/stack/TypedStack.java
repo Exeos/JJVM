@@ -69,6 +69,10 @@ public class TypedStack {
         return entryData;
     }
 
+    public short popI16() {
+        return ByteHelper.bytesToInt16(pop());
+    }
+
     public int popI32() {
         return ByteHelper.bytesToInt32(pop());
     }
@@ -95,19 +99,18 @@ public class TypedStack {
             case Types.INT_64 -> {
                 return ByteHelper.bytesToInt64(pop());
             }
-            case Types.OBJECT -> {
-                // todo: idk how to explain but this will cause problems, because where tf is this object
-                short index = ByteHelper.bytesToInt16(pop());
+            case Types.CP_REF -> {
+                short index = popI16();
 
-                return cp.getConstant(type, index);
+                return cp.getConstant(index);
+            }
+            case Types.HEAP_REF, Types.S_ARRAY_REF -> {
+                long heapRef = popI64();
+
+                return heap.getRefValue(heapRef);
             }
             case Types.S_NULL_REF -> {
                 return null;
-            }
-            case Types.S_ARRAY_REF -> {
-                long heapRef = ByteHelper.bytesToInt64(pop());
-
-                return heap.getRefValue(heapRef);
             }
         }
         return null;

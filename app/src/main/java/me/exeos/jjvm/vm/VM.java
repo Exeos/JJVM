@@ -8,7 +8,11 @@ import me.exeos.jjvm.vm.memory.Heap;
 import me.exeos.jjvm.vm.memory.TypedValue;
 import me.exeos.jjvm.vm.stack.TypedStack;
 
+import java.io.ObjectStreamException;
+import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.List;
 
 public class VM {
 
@@ -27,6 +31,54 @@ public class VM {
             switch (byteToInterpret) {
                 case OpCodes.NOP -> {}
                 case OpCodes.POP -> stack.pop();
+                case OpCodes.GET_STATIC -> {
+                    ensureAvailable(bytecode, pc, 6);
+
+                    String owner = cp.getConstant(Types.OBJECT, ByteHelper.bytesToInt16(ByteHelper.concat(bytecode[pc++], bytecode[pc++])));
+                    String member = cp.getConstant(Types.OBJECT, ByteHelper.bytesToInt16(ByteHelper.concat(bytecode[pc++], bytecode[pc++])));
+                    String descriptor = cp.getConstant(Types.OBJECT, ByteHelper.bytesToInt16(ByteHelper.concat(bytecode[pc++], bytecode[pc++])));
+
+                    Class<?>[] descriptorTypes = DescriptorHelper.parseDescriptor(descriptor);
+                    if (descriptorTypes.length > 1) {
+                        throw new RuntimeException("Field can't contain multiple Types in descriptor");
+                    }
+
+                    try {
+                        Class<?> clazz = Class.forName(owner.replace("/", "."));
+                        Field field = null;
+                        for (Field clazzField : clazz.getFields()) {
+                            if (clazzField.getName().equals(member) && clazzField.getType() == descriptorTypes[0]) {
+                                field = clazzField;
+                                break;
+                            }
+                        }
+
+                        if (field == null) {
+                            throw new RuntimeException("Field not found. Owner: " + owner + " Field: " + member + " Descriptor: " + descriptor);
+                        }
+
+                        if (field.getType() == boolean.class) {
+                            stack.push(ByteHelper.boolToByte(field.getBoolean(null)), Types.BOOL);
+                        } else if (field.getType() == byte.class) {
+                            stack.push(field.getByte(null), Types.INT_8);
+                        } else if (field.getType() == short.class) {
+                            stack.push(ByteHelper.int16ToBytes(field.getShort(null)), Types.INT_16);
+                        } else if (field.getType() == int.class) {
+                            stack.push(ByteHelper.int32ToBytes(field.getInt(null)), Types.INT_32);
+                        } else if (field.getType() == long.class) {
+                            stack.push(ByteHelper.int64ToBytes(field.getLong(null)), Types.INT_64);
+                        } else if (field.getType() == float.class) {
+                            stack.push(ByteHelper.floatToBytes(field.getFloat(null)), Types.FLOAT);
+                        } else if (field.getType() == double.class) {
+                            stack.push(ByteHelper.doubleToBytes(field.getDouble(null)), Types.DOUBLE);
+                        } else {
+                            long heapRef = heap.createRef(Types.OBJECT, field.get(null));
+                            stack.push(ByteHelper.int64ToBytes(heapRef), Types.HEAP_REF);
+                        }
+                    } catch (ClassNotFoundException | IllegalAccessException e) {
+                        throw new RuntimeException(e);
+                    }
+                }
                 case OpCodes.INVOKE_STATIC -> {
                     ensureAvailable(bytecode, pc, 6);
 
@@ -38,16 +90,13 @@ public class VM {
 
                     try {
                         Class<?> clazz = Class.forName(owner.replace('/', '.'));
-                        Method method = clazz.getMethod(member, methodDescriptor.params());
+                        Method method = clazz.getMethod(member, methodDescriptor.parameterDescriptor());
                         try {
-                            // get all arguments from stack
-                            // convert them to their java type
-                            Object[] params = new Object[methodDescriptor.params().length];
+                            Object[] params = new Object[methodDescriptor.parameterDescriptor().length];
                             for (int i = params.length - 1; i >= 0; i--) {
                                 params[i] = stack.popJVMType(cp, heap);
                             }
 
-                            // todo find out if this passing of params is correct or will just pass the list it self
                             method.invoke(null, params);
                         } catch (Exception e) {
                             System.out.println("Invoked method threw Exception. This currently does not affect the control flow!");
@@ -56,17 +105,48 @@ public class VM {
                     } catch (ClassNotFoundException | NoSuchMethodException e) {
                         throw new RuntimeException("Can't find Class or Method to invoke");
                     }
+                }
+                case OpCodes.INVOKE_VIRTUAL -> {
+                    ensureAvailable(bytecode, pc, 6);
 
-                    System.out.println("Owner: " + owner + " Member: " + member);
+                    String owner = cp.getConstant(Types.OBJECT, ByteHelper.bytesToInt16(ByteHelper.concat(bytecode[pc++], bytecode[pc++])));
+                    String member = cp.getConstant(Types.OBJECT, ByteHelper.bytesToInt16(ByteHelper.concat(bytecode[pc++], bytecode[pc++])));
+                    String descriptor = cp.getConstant(Types.OBJECT, ByteHelper.bytesToInt16(ByteHelper.concat(bytecode[pc++], bytecode[pc++])));
+
+                    DescriptorHelper.MethodDescriptor methodDescriptor = DescriptorHelper.parseMethodDescriptor(descriptor);
+
+                    try {
+                        Class<?> clazz = Class.forName(owner.replace('/', '.'));
+                        Method method = clazz.getMethod(member, methodDescriptor.parameterDescriptor());
+                        try {
+                            Object[] params = new Object[methodDescriptor.parameterDescriptor().length];
+                            for (int i = params.length - 1; i >= 0; i--) {
+                                params[i] = stack.popJVMType(cp, heap);
+                            }
+
+                            Object object = switch (stack.type()) {
+                                case Types.HEAP_REF -> heap.getRefValue(Types.OBJECT, stack.popI64());
+                                case Types.CP_REF -> cp.getConstant(Types.OBJECT, stack.popI16());
+                                default -> throw new IllegalStateException("Invalid stack type for invoke_virtual. Type: " + stack.type());
+                            };
+
+                            method.invoke(object, params);
+                        } catch (Exception e) {
+                            System.out.println("Invoked method threw Exception. This currently does not affect the control flow!");
+                            e.printStackTrace();
+                        }
+                    } catch (ClassNotFoundException | NoSuchMethodException e) {
+                        throw new RuntimeException("Can't find Class or Method to invoke");
+                    }
                 }
                 case OpCodes.LDC -> {
                     ensureAvailable(bytecode, pc, 3);
 
-                    byte type = bytecode[pc++];
                     short index = ByteHelper.bytesToInt16(ByteHelper.concat(
                             bytecode[pc++],
                             bytecode[pc++]
                     ));
+                    byte type = cp.getConstantType(index);
 
                     switch (type) {
                         case Types.BOOL -> stack.push(ByteHelper.boolToByte(cp.getConstant(type, index)), type);
@@ -74,7 +154,7 @@ public class VM {
                         case Types.INT_16 -> stack.push(ByteHelper.int16ToBytes(cp.getConstant(type, index)), type);
                         case Types.INT_32 -> stack.push(ByteHelper.int32ToBytes(cp.getConstant(type, index)), type);
                         case Types.INT_64 -> stack.push(ByteHelper.int64ToBytes(cp.getConstant(type, index)), type);
-                        case Types.OBJECT -> stack.push(ByteHelper.int16ToBytes(index), type);
+                        case Types.OBJECT -> stack.push(ByteHelper.int16ToBytes(index), Types.CP_REF);
                         default -> throw new IllegalStateException("Invalid Type: " + type);
                     }
                 }

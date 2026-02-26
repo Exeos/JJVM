@@ -6,17 +6,15 @@ import me.exeos.jjvm.vm.bytecode.insn.AbstractInstruction;
 
 public class LdcInstruction extends AbstractInstruction {
 
-    private final byte type;
     private final short cpIndex;
 
-    public LdcInstruction(byte type, short cpIndex) {
+    public LdcInstruction(short cpIndex) {
         super(OpCodes.LDC);
-        this.type = type;
         this.cpIndex = cpIndex;
     }
 
     @Override
     public byte[] getBytecode() {
-        return ByteHelper.concat(opcode, type, ByteHelper.int16ToBytes(cpIndex));
+        return ByteHelper.concat(opcode, ByteHelper.int16ToBytes(cpIndex));
     }
 }

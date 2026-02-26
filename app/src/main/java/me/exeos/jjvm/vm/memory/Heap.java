@@ -33,11 +33,10 @@ public class Heap {
             throw new NullPointerException("Heap reference doesn't exist");
         }
 
-        return ref;
+        return ref.value;
     }
 
-    public <T> void mutateRef(byte type, long reference, Consumer<T> mutator) {
-        T value = getRefValue(type, reference);
-        mutator.accept(value);
+    public byte getRefType(long reference) {
+        return heap.get(reference).type;
     }
 }

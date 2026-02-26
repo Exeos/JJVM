@@ -5,6 +5,62 @@ import java.util.List;
 
 public class DescriptorHelper {
 
+    public static Class<?>[] parseDescriptor(String descriptor) {
+        List<Class<?>> descriptorType = new ArrayList<>();
+
+        for (int i = 0; i < descriptor.length(); i++) {
+            switch (descriptor.charAt(i++)) {
+                case 'L' -> {
+                    int end = descriptor.indexOf(';', i);
+
+                    Class<?> clazz = null;
+
+                    try {
+                        clazz = Class.forName(descriptor.substring(i, end).replace('/', '.'));
+                    } catch (ClassNotFoundException e) {
+                        System.out.println("Class provided in descriptor not found.");
+                        System.exit(1);
+                    }
+
+                    descriptorType.add(clazz);
+                    i = end + 1;
+                }
+                case '[' -> {
+                    int end = i;
+                    while (descriptor.charAt(end) == '[') {
+                        end++;
+                    }
+                    if (descriptor.charAt(end) == 'L') {
+                        end = descriptor.indexOf(';', end);
+                    }
+
+                    Class<?> arrClazz = null;
+                    try {
+                        arrClazz = Class.forName(descriptor.substring(i - 1, end + 1).replace('/', '.'));
+                    } catch (ClassNotFoundException e) {
+                        System.out.println("Class provided in descriptor not found.");
+                        System.exit(1);
+                    }
+
+                    descriptorType.add(arrClazz);
+                    i = end + 1;
+                }
+                case 'B' -> descriptorType.add(byte.class);
+                case 'C' -> descriptorType.add(char.class);
+                case 'D' -> descriptorType.add(double.class);
+                case 'F' -> descriptorType.add(float.class);
+                case 'I' -> descriptorType.add(int.class);
+                case 'J' -> descriptorType.add(long.class);
+                case 'S' -> descriptorType.add(short.class);
+                case 'Z' -> descriptorType.add(boolean.class);
+
+                default -> throw new IllegalStateException("Failed to parse descriptor. Invalid char: " + descriptor.charAt(i - 1));
+            }
+        }
+
+        return descriptorType.toArray(new Class<?>[0]);
+    }
+
     public static MethodDescriptor parseMethodDescriptor(String descriptor) {
         List<Class<?>> parameterDescriptor = new ArrayList<>();
         Class<?> returnType = null;
@@ -144,5 +200,5 @@ public class DescriptorHelper {
         return new MethodDescriptor(parameterDescriptor.toArray(new Class<?>[0]), returnType);
     }
 
-    public record MethodDescriptor(Class<?>[] params, Class<?> returnType) {}
+    public record MethodDescriptor(Class<?>[] parameterDescriptor, Class<?> returnDescriptor) {}
 }
