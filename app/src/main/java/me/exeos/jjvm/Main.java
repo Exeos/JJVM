@@ -13,16 +13,18 @@ public class Main {
         try {
             VM.exec(
                     ByteHelper.concat(
-                            new PushI8Instruction((byte) 4).getBytecode(),
-                            new NewArrayInstruction(Types.BOOL).getBytecode(),
-                            new PushI8Instruction((byte) 0).getBytecode(),
-                            new PushI8Instruction((byte) 1).getBytecode(),
-                            new ArrStoreInstruction(Types.BOOL).getBytecode()
+                            new LdcInstruction(Types.OBJECT, (short) 0).getBytecode(),
+                            new InvokeStaticInstruction((short) 1, (short) 2, (short) 3).getBytecode()
                     ),
-                    20, 20
+                    20, 20,
+                    new TypedValue<String>(Types.OBJECT, "Hello World"),
+                    new TypedValue<String>(Types.OBJECT, "java/lang/IO"),
+                    new TypedValue<String>(Types.OBJECT, "println"),
+                    new TypedValue<String>(Types.OBJECT, "(Ljava/lang/Object;)V")
             );
         } catch (RuntimeException e) {
             System.out.println("VM exited with error: " + e);
+            e.printStackTrace();
         }
     }
 

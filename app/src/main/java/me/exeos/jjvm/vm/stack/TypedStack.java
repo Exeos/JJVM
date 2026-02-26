@@ -2,6 +2,9 @@ package me.exeos.jjvm.vm.stack;
 
 import me.exeos.jjvm.helpers.ByteHelper;
 import me.exeos.jjvm.vm.TypeCheckFunction;
+import me.exeos.jjvm.vm.Types;
+import me.exeos.jjvm.vm.memory.ConstantPool;
+import me.exeos.jjvm.vm.memory.Heap;
 
 /**
  * Typed Stack
@@ -72,6 +75,42 @@ public class TypedStack {
 
     public long popI64() {
         return ByteHelper.bytesToInt64(pop());
+    }
+
+    public Object popJVMType(ConstantPool cp, Heap heap) {
+        byte type = type();
+        switch (type) {
+            case Types.BOOL -> {
+                return ByteHelper.byteToBoolean(pop()[0]);
+            }
+            case Types.INT_8 -> {
+                return pop()[0];
+            }
+            case Types.INT_16 -> {
+                return ByteHelper.bytesToInt16(pop());
+            }
+            case Types.INT_32 -> {
+                return ByteHelper.bytesToInt32(pop());
+            }
+            case Types.INT_64 -> {
+                return ByteHelper.bytesToInt64(pop());
+            }
+            case Types.OBJECT -> {
+                // todo: idk how to explain but this will cause problems, because where tf is this object
+                short index = ByteHelper.bytesToInt16(pop());
+
+                return cp.getConstant(type, index);
+            }
+            case Types.S_NULL_REF -> {
+                return null;
+            }
+            case Types.S_ARRAY_REF -> {
+                long heapRef = ByteHelper.bytesToInt64(pop());
+
+                return heap.getRefValue(heapRef);
+            }
+        }
+        return null;
     }
 
     public byte type() {

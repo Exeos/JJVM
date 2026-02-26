@@ -10,7 +10,10 @@ public class Types {
 
     public static final byte OBJECT = 0x7;
 
+    public static final byte HEAP_REF = 0x7;
+    public static final byte CP_REF = 0x8;
+
     /* Stack only types */
-    public static final byte S_NULL_REF = 0x8;
-    public static final byte S_ARRAY_REF = 0x9;
+    public static final byte S_NULL_REF = 0x9;
+    public static final byte S_ARRAY_REF = 0xA;
 }

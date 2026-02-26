@@ -4,6 +4,10 @@ import java.util.Objects;
 
 public class ByteHelper {
 
+    public static boolean byteToBoolean(byte value) {
+        return value != 0;
+    }
+
     public static short bytesToInt16(byte[] bytes) {
         return (short)
                 (((bytes[0] & 0xFF) << 8) |
@@ -41,6 +45,10 @@ public class ByteHelper {
                 ((bytes[5] & 0xFFL) << 16) |
                 ((bytes[6] & 0xFFL) <<  8) |
                 ((bytes[7] & 0xFFL));
+    }
+
+    public static byte boolToByte(boolean value) {
+        return (byte) (value ? 1 : 0);
     }
 
     public static byte[] int16ToBytes(short value) {

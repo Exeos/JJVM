@@ -1,11 +1,14 @@
 package me.exeos.jjvm.vm;
 
 import me.exeos.jjvm.helpers.ByteHelper;
+import me.exeos.jjvm.helpers.DescriptorHelper;
 import me.exeos.jjvm.vm.bytecode.OpCodes;
 import me.exeos.jjvm.vm.memory.ConstantPool;
 import me.exeos.jjvm.vm.memory.Heap;
 import me.exeos.jjvm.vm.memory.TypedValue;
 import me.exeos.jjvm.vm.stack.TypedStack;
+
+import java.lang.reflect.Method;
 
 public class VM {
 
@@ -24,6 +27,57 @@ public class VM {
             switch (byteToInterpret) {
                 case OpCodes.NOP -> {}
                 case OpCodes.POP -> stack.pop();
+                case OpCodes.INVOKE_STATIC -> {
+                    ensureAvailable(bytecode, pc, 6);
+
+                    String owner = cp.getConstant(Types.OBJECT, ByteHelper.bytesToInt16(ByteHelper.concat(bytecode[pc++], bytecode[pc++])));
+                    String member = cp.getConstant(Types.OBJECT, ByteHelper.bytesToInt16(ByteHelper.concat(bytecode[pc++], bytecode[pc++])));
+                    String descriptor = cp.getConstant(Types.OBJECT, ByteHelper.bytesToInt16(ByteHelper.concat(bytecode[pc++], bytecode[pc++])));
+
+                    DescriptorHelper.MethodDescriptor methodDescriptor = DescriptorHelper.parseMethodDescriptor(descriptor);
+
+                    try {
+                        Class<?> clazz = Class.forName(owner.replace('/', '.'));
+                        Method method = clazz.getMethod(member, methodDescriptor.params());
+                        try {
+                            // get all arguments from stack
+                            // convert them to their java type
+                            Object[] params = new Object[methodDescriptor.params().length];
+                            for (int i = params.length - 1; i >= 0; i--) {
+                                params[i] = stack.popJVMType(cp, heap);
+                            }
+
+                            // todo find out if this passing of params is correct or will just pass the list it self
+                            method.invoke(null, params);
+                        } catch (Exception e) {
+                            System.out.println("Invoked method threw Exception. This currently does not affect the control flow!");
+                            e.printStackTrace();
+                        }
+                    } catch (ClassNotFoundException | NoSuchMethodException e) {
+                        throw new RuntimeException("Can't find Class or Method to invoke");
+                    }
+
+                    System.out.println("Owner: " + owner + " Member: " + member);
+                }
+                case OpCodes.LDC -> {
+                    ensureAvailable(bytecode, pc, 3);
+
+                    byte type = bytecode[pc++];
+                    short index = ByteHelper.bytesToInt16(ByteHelper.concat(
+                            bytecode[pc++],
+                            bytecode[pc++]
+                    ));
+
+                    switch (type) {
+                        case Types.BOOL -> stack.push(ByteHelper.boolToByte(cp.getConstant(type, index)), type);
+                        case Types.INT_8 -> stack.push(cp.getConstant(type, index), type);
+                        case Types.INT_16 -> stack.push(ByteHelper.int16ToBytes(cp.getConstant(type, index)), type);
+                        case Types.INT_32 -> stack.push(ByteHelper.int32ToBytes(cp.getConstant(type, index)), type);
+                        case Types.INT_64 -> stack.push(ByteHelper.int64ToBytes(cp.getConstant(type, index)), type);
+                        case Types.OBJECT -> stack.push(ByteHelper.int16ToBytes(index), type);
+                        default -> throw new IllegalStateException("Invalid Type: " + type);
+                    }
+                }
                 case OpCodes.PUSH_BOOL -> {
                     ensureAvailable(bytecode, pc, 1);
                     stack.push(bytecode[pc++], Types.BOOL);
@@ -79,7 +133,7 @@ public class VM {
                     stack.push(ByteHelper.int64ToBytes(heapRef), Types.S_ARRAY_REF);
                 }
                 case OpCodes.ARR_LOAD -> {
-
+                    throw new RuntimeException("ARR_LOAD is not yet implemented.");
                 }
                 case OpCodes.ARR_STORE -> {
                     // get arr type from operand
@@ -124,9 +178,7 @@ public class VM {
                             Object[] arr = heap.getRefValue(arrType, heapRef);
                             arr[index] = heap.getRefValue(Types.OBJECT, ByteHelper.bytesToInt64(value));
                         }
-                        default -> {
-                            throw new IllegalStateException("Invalid Type: " + arrType);
-                        }
+                        default -> throw new IllegalStateException("Invalid Type: " + arrType);
                     }
                 }
                 // DEBUG INSN

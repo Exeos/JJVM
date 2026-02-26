@@ -27,6 +27,15 @@ public class Heap {
         return (T) ref.value;
     }
 
+    public Object getRefValue(long reference) {
+        TypedValue ref = heap.get(reference);
+        if (ref == null) {
+            throw new NullPointerException("Heap reference doesn't exist");
+        }
+
+        return ref;
+    }
+
     public <T> void mutateRef(byte type, long reference, Consumer<T> mutator) {
         T value = getRefValue(type, reference);
         mutator.accept(value);
