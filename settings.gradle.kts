@@ -1,2 +1,2 @@
 rootProject.name = "JJVM"
-include("app")
+include("vm", "shared", "assembler", "app")

@@ -9,6 +9,12 @@ repositories {
     mavenCentral()
 }
 
+dependencies {
+    implementation(project(":shared"))
+    implementation(project(":assembler"))
+    implementation(project(":vm"))
+}
+
 java {
     toolchain {
         languageVersion = JavaLanguageVersion.of(25)
@@ -16,5 +22,5 @@ java {
 }
 
 application {
-    mainClass = "me.exeos.jjvm.Main"
+    mainClass = "me.exeos.jjvm.app.Main"
 }
