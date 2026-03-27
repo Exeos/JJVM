@@ -6,20 +6,21 @@ import me.exeos.jjvm.shared.bytecode.OpCodes;
 import me.exeos.jjvm.vm.locals.LocalStore;
 import me.exeos.jjvm.vm.memory.ConstantPool;
 import me.exeos.jjvm.vm.memory.Heap;
-import me.exeos.jjvm.vm.memory.TypedValue;
+import me.exeos.jjvm.shared.memory.TypedValue;
 import me.exeos.jjvm.vm.stack.TypedStack;
-import me.exeos.jjvm.vm.type.TypeCheckFunction;
-import me.exeos.jjvm.vm.type.Types;
+import me.exeos.jjvm.shared.type.TypeCheckFunction;
+import me.exeos.jjvm.shared.type.Types;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.util.List;
 
 public class VM {
 
     /**
      * Execute Method. Frames out of this methods scope can't use its stack.
      */
-    public static <T> T exec(byte[] bytecode, int maxStackSize, int maxStackEntries, int maxLocals, Class<T> returnType, TypedValue... constants) {
+    public static <T> T exec(byte[] bytecode, int maxStackSize, int maxStackEntries, int maxLocals, Class<T> returnType, List<TypedValue> constants) {
 
         ConstantPool cp = new ConstantPool(constants);
         Heap heap = new Heap();

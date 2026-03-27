@@ -9,7 +9,7 @@ public class PushI16Instruction extends AbstractInstruction {
     public final short value;
 
     public PushI16Instruction(short value) {
-        super(OpCodes.PUSH_I16);
+        super(OpCodes.PUSH_I16, 3);
         this.value = value;
     }
 

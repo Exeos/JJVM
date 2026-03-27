@@ -1,4 +1,4 @@
-package me.exeos.jjvm.vm.memory;
+package me.exeos.jjvm.shared.memory;
 
 public class TypedValue<T> {
 

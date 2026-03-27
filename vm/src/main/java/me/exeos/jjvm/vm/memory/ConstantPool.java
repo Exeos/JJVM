@@ -2,13 +2,16 @@ package me.exeos.jjvm.vm.memory;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
+
+import me.exeos.jjvm.shared.memory.TypedValue;
 
 public class ConstantPool {
 
     private final ArrayList<TypedValue> constants;
 
-    public ConstantPool(TypedValue... constants) {
-        this.constants = new ArrayList<>(Arrays.asList(constants));
+    public ConstantPool(List<TypedValue> constants) {
+        this.constants = new ArrayList<>(constants);
     }
 
     public <T> T getConstant(byte type, short index) {

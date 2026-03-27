@@ -8,7 +8,7 @@ public class PushI8Instruction extends AbstractInstruction {
     public final byte value;
 
     public PushI8Instruction(byte value) {
-        super(OpCodes.PUSH_I8);
+        super(OpCodes.PUSH_I8, 2);
         this.value = value;
     }
 

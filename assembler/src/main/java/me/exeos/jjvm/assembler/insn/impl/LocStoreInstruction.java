@@ -9,7 +9,7 @@ public class LocStoreInstruction extends AbstractInstruction {
     private final byte index;
 
     public LocStoreInstruction(byte index) {
-        super(OpCodes.LOC_STORE);
+        super(OpCodes.LOC_STORE, 2);
         this.index = index;
     }
 

@@ -5,7 +5,7 @@ import me.exeos.jjvm.assembler.insn.AbstractInstruction;
 public class Instruction extends AbstractInstruction {
 
     public Instruction(byte opcode) {
-        super(opcode);
+        super(opcode, 1);
     }
 
     @Override

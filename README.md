@@ -355,6 +355,20 @@ Returns top of stack if return type is not void. If void, just returns.
 
 ---
 
+### `throw`
+
+> **Opcode:** `21 (0x15)`  \
+> **Operands:** \
+> **Stack:** `... → ...`
+
+Returns top of stack if return type is not void. If void, just returns.
+
+**Possible errors**
+- Stack underflow if the stack is empty.
+- Invalid stack type
+
+---
+
 ## ToDo
 - Functionally finish the VM
 - Migrate VM to Zig with JNI bindings

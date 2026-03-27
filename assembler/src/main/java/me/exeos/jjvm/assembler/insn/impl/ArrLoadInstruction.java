@@ -8,7 +8,7 @@ public class ArrLoadInstruction extends AbstractInstruction {
     private final byte arrType;
 
     public ArrLoadInstruction(byte arrType) {
-        super(OpCodes.ARR_LOAD);
+        super(OpCodes.ARR_LOAD, 2);
         this.arrType = arrType;
     }
 

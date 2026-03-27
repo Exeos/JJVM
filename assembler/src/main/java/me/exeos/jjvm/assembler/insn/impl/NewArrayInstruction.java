@@ -8,7 +8,7 @@ public class NewArrayInstruction extends AbstractInstruction {
     private final byte arrType;
 
     public NewArrayInstruction(byte arrType) {
-        super(OpCodes.NEW_ARRAY);
+        super(OpCodes.NEW_ARRAY, 2);
         this.arrType = arrType;
     }
 

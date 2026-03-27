@@ -5,7 +5,7 @@ import me.exeos.jjvm.assembler.insn.AbstractInstruction;
 public class Label extends AbstractInstruction {
 
     public Label() {
-        super(Byte.MIN_VALUE);
+        super(Byte.MIN_VALUE, 0);
     }
 
     @Override

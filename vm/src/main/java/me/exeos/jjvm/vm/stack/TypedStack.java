@@ -1,8 +1,8 @@
 package me.exeos.jjvm.vm.stack;
 
 import me.exeos.jjvm.shared.helpers.ByteHelper;
-import me.exeos.jjvm.vm.type.TypeCheckFunction;
-import me.exeos.jjvm.vm.type.Types;
+import me.exeos.jjvm.shared.type.TypeCheckFunction;
+import me.exeos.jjvm.shared.type.Types;
 import me.exeos.jjvm.vm.memory.ConstantPool;
 import me.exeos.jjvm.vm.memory.Heap;
 

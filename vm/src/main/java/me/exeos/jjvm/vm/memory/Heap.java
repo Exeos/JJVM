@@ -1,6 +1,7 @@
 package me.exeos.jjvm.vm.memory;
 
 import java.util.HashMap;
+import me.exeos.jjvm.shared.memory.TypedValue;
 
 public class Heap {
     

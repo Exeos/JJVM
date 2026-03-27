@@ -9,7 +9,7 @@ public class LocLoadInstruction extends AbstractInstruction {
     private final byte index;
 
     public LocLoadInstruction(byte index) {
-        super(OpCodes.LOC_LOAD);
+        super(OpCodes.LOC_LOAD, 2);
         this.index = index;
     }
 

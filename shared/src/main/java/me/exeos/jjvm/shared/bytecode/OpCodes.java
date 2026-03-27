@@ -32,4 +32,6 @@ public class OpCodes {
     public static final byte GOTO = 0x14;
 
     public static final byte RETURN = 0x12;
+
+    public static final byte THROW = 0x15;
 }
