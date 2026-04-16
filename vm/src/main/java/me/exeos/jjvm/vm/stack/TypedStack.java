@@ -29,6 +29,11 @@ public class TypedStack {
         stackEntryPointer = 0;
     }
 
+    public void clear() {
+        stackDataPointer = 0;
+        stackEntryPointer = 0;
+    }
+
     public void push(byte value, byte type) {
         if (type == Types.OBJECT) {
             throw new IllegalArgumentException("Can't push Object on stack");
@@ -59,6 +64,23 @@ public class TypedStack {
 
         stackDataPointer += value.length;
         stackEntryPointer++;
+    }
+
+    public void pushJVMType(Object target, Heap heap) {
+        switch (target) {
+            case null -> push(new byte[0], Types.S_NULL_REF);
+            case Boolean b -> push(ByteHelper.boolToByte(b), Types.BOOL);
+            case Byte b -> push(b, Types.INT_8);
+            case Short s -> push(ByteHelper.int16ToBytes(s), Types.INT_16);
+            case Integer i -> push(ByteHelper.int32ToBytes(i), Types.INT_32);
+            case Long l -> push(ByteHelper.int64ToBytes(l), Types.INT_64);
+            case Float f -> push(ByteHelper.floatToBytes(f), Types.FLOAT);
+            case Double d -> push(ByteHelper.doubleToBytes(d), Types.DOUBLE);
+            default -> {
+                long heapRef = heap.createRef(Types.OBJECT, target);
+                push(ByteHelper.int64ToBytes(heapRef), Types.HEAP_REF);
+            }
+        }
     }
 
     public byte[] pop() {

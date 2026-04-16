@@ -1,21 +1,26 @@
 package me.exeos.jjvm.assembler;
 
 import me.exeos.jjvm.assembler.cp.CpBuilder;
+import me.exeos.jjvm.assembler.exception.AbstractedExceptionBlock;
 import me.exeos.jjvm.assembler.insn.AbstractInstruction;
 import me.exeos.jjvm.assembler.insn.impl.*;
 import me.exeos.jjvm.assembler.insn.special.Label;
+import me.exeos.jjvm.shared.exception.ExceptionBlock;
 import me.exeos.jjvm.shared.helpers.ByteHelper;
 import org.apache.commons.lang3.ArrayUtils;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 
 public class Assembler {
 
-    public static AssemblerResult assemble(AbstractInstruction... instructions) {
+    public static AssemblerResult assemble(List<AbstractedExceptionBlock> abstractedExceptionBlocks, AbstractInstruction... instructions) {
         ArrayList<Byte> code = new ArrayList<>();
         CpBuilder cpBuilder = new CpBuilder();
+        List<ExceptionBlock> exceptionBlocks = new ArrayList<>();
+
 
         HashMap<Label, Short> labelPositionMap = new HashMap<>();
         short position = 0;
@@ -32,6 +37,10 @@ public class Assembler {
 
                 position = (short) nextPos;
             }
+        }
+
+        for (AbstractedExceptionBlock block : abstractedExceptionBlocks) {
+            exceptionBlocks.add(new ExceptionBlock(labelPositionMap.get(block.start()), labelPositionMap.get(block.end()), labelPositionMap.get(block.handler()), block.type()));
         }
 
         // generate bytecode and create constant pool
@@ -116,6 +125,6 @@ public class Assembler {
             out[i] = code.get(i);
         }
 
-        return new AssemblerResult(out, cpBuilder.getConstants());
+        return new AssemblerResult(out, cpBuilder.getConstants(), exceptionBlocks);
     }
 }

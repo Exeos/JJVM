@@ -1,7 +1,9 @@
 # JJVM
+
 A VM interoperating with the JVM running on the JVM
 
 ## Why?
+
 To learn. Eventually I would like to use an interoperating VM for virtualizing bytecode.
 
 ## Running
@@ -10,6 +12,7 @@ To learn. Eventually I would like to use an interoperating VM for virtualizing b
 - Run: `./gradlew app::run`
 
 ## VM Overview
+
 JJVM currently exposes a single entry-point:
 
 - `VM.exec(byte[] bytecode, int maxStackSize, int maxStackEntries, int maxLocals, TypedValue... constants)`
@@ -22,6 +25,7 @@ At runtime the VM uses:
 - **LocalStore**: local variables (index -> value/type)
 
 ## Bytecode Format
+
 The VM reads a `byte[]` stream. Each instruction begins with a 1-byte opcode, optionally followed by operands.
 
 - **Opcode:** 1 byte
@@ -39,6 +43,8 @@ This section documents the JJVM instruction set currently implemented.
 - `u1` = 1 byte, `u2` = 2 bytes.
 
 ### Quick reference
+
+objectref's are internally represented by heapref -> Ref with type Object
 
 | Mnemonic         |      Opcode | Operands                      | Stack effect                        |
 |------------------|------------:|-------------------------------|-------------------------------------|
@@ -84,6 +90,7 @@ Does nothing.
 Removes the top entry from the operand stack.
 
 **Possible errors**
+
 - Stack underflow if the stack is empty.
 
 ---
@@ -97,6 +104,7 @@ Removes the top entry from the operand stack.
 Duplicates the top stack entry.
 
 **Possible errors**
+
 - Stack underflow if the stack is empty.
 
 ---
@@ -110,6 +118,7 @@ Duplicates the top stack entry.
 Stores the top stack value into local slot `index`.
 
 **Possible errors**
+
 - Stack underflow if the stack is empty.
 - Local index out of bounds.
 
@@ -124,6 +133,7 @@ Stores the top stack value into local slot `index`.
 Loads local slot `index` and pushes it onto the operand stack.
 
 **Possible errors**
+
 - Local index out of bounds.
 - Loading an uninitialized slot (implementation-defined behavior).
 
@@ -138,15 +148,18 @@ Loads local slot `index` and pushes it onto the operand stack.
 Reads a static field from the **host JVM** using reflection.
 
 **Operands**
+
 - `owner_index`: constant-pool index to the owner internal name (e.g. `java/lang/System`)
 - `name_index`: constant-pool index to the field name
 - `descriptor_index`: constant-pool index to the field descriptor
 
 **Notes**
+
 - Primitive values are pushed as their JJVM primitive type.
 - Non-primitive values are placed into the JJVM heap and pushed as a heap reference.
 
 **Possible errors**
+
 - Class not found
 - Field not found / not accessible
 - Descriptor mismatch / invalid descriptor
@@ -162,10 +175,12 @@ Reads a static field from the **host JVM** using reflection.
 Loads a constant from the JJVM constant pool.
 
 **Notes**
+
 - Primitive constants are pushed as primitive JJVM types.
 - Object constants are pushed as a constant-pool reference (`CP_REF`).
 
 **Possible errors**
+
 - Invalid constant-pool index.
 
 ---
@@ -179,10 +194,12 @@ Loads a constant from the JJVM constant pool.
 Invokes a **static** host-JVM method via reflection.
 
 **Notes**
+
 - Arguments are popped **last parameter first**.
 - Current behavior (per VM code): exceptions from the invoked method are printed and do not affect JJVM control flow.
 
 **Possible errors**
+
 - Class/method not found (resolution failure)
 
 ---
@@ -196,6 +213,7 @@ Invokes a **static** host-JVM method via reflection.
 Invokes an **instance** host-JVM method via reflection.
 
 **Notes**
+
 - Pops args **last parameter first**.
 - Then pops `objectref`, which must be a:
     - heap reference (`HEAP_REF`), or
@@ -203,6 +221,7 @@ Invokes an **instance** host-JVM method via reflection.
 - Current behavior: invoked exceptions are printed and do not affect JJVM control flow.
 
 **Possible errors**
+
 - Class/method not found
 - Invalid `objectref` type
 
@@ -247,6 +266,7 @@ Pushes a 2-byte immediate as `INT_16`.
 Pushes an `INT_32` constant referenced by a constant-pool index.
 
 **Possible errors**
+
 - Invalid constant-pool index
 - Wrong constant type
 
@@ -261,6 +281,7 @@ Pushes an `INT_32` constant referenced by a constant-pool index.
 Pushes an `INT_64` constant referenced by a constant-pool index.
 
 **Possible errors**
+
 - Invalid constant-pool index
 - Wrong constant type
 
@@ -285,11 +306,13 @@ Pushes a special null reference marker (`S_NULL_REF`).
 Allocates a new array on the JJVM heap.
 
 **Notes**
+
 - Pops `count` (must be an integer type).
 - `atype` is a JJVM `Types.*` value (`BOOL..OBJECT`).
 - Pushes an array reference (`S_ARRAY_REF`).
 
 **Possible errors**
+
 - Invalid `atype`
 - Negative `count`
 
@@ -304,11 +327,13 @@ Allocates a new array on the JJVM heap.
 Loads `arrayref[index]` and pushes it.
 
 **Possible errors**
+
 - Invalid/null array reference
 - Index out of bounds
 - Element type mismatch
 
-> Repo note: the repo `VM.java` currently throws `ARR_LOAD is not yet implemented.`; your newer `VM.java` (from chat) includes an implementation.
+> Repo note: the repo `VM.java` currently throws `ARR_LOAD is not yet implemented.`; your newer `VM.java` (from chat)
+> includes an implementation.
 
 ---
 
@@ -321,6 +346,7 @@ Loads `arrayref[index]` and pushes it.
 Stores `value` into `arrayref[index]`.
 
 **Possible errors**
+
 - Invalid/null array reference
 - Index out of bounds
 - Element type mismatch
@@ -331,11 +357,12 @@ Stores `value` into `arrayref[index]`.
 
 > **Opcode:** `19 (0x13)`  \
 > **Operands:** \
-> **Stack:** `..., arrayref → length`
+> **Stack:** `..., arrayref → ..., length`
 
 Pushes to length of an array onto the Stack
 
 **Possible errors**
+
 - Stack underflow
 - Stack type mismatch
 
@@ -350,6 +377,7 @@ Pushes to length of an array onto the Stack
 Returns top of stack if return type is not void. If void, just returns.
 
 **Possible errors**
+
 - Stack underflow if the stack is empty.
 - Invalid stack type
 
@@ -359,17 +387,20 @@ Returns top of stack if return type is not void. If void, just returns.
 
 > **Opcode:** `21 (0x15)`  \
 > **Operands:** \
-> **Stack:** `... → ...`
+> **Stack:** `..., objectref → objectref`
 
-Returns top of stack if return type is not void. If void, just returns.
+Throws object on top of the stack, exception handling applies.
 
 **Possible errors**
+
 - Stack underflow if the stack is empty.
 - Invalid stack type
+- Many more
 
 ---
 
 ## ToDo
+
 - Functionally finish the VM
 - Migrate VM to Zig with JNI bindings
 - Encrypt bytecode with checksum as dec key

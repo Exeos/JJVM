@@ -1,7 +1,9 @@
 package me.exeos.jjvm.assembler;
 
+import me.exeos.jjvm.shared.exception.ExceptionBlock;
 import me.exeos.jjvm.shared.memory.TypedValue;
 
 import java.util.List;
 
-public record AssemblerResult(byte[] bytecode, List<TypedValue> cp) {}
+public record AssemblerResult(byte[] bytecode, List<TypedValue> cp, List<ExceptionBlock> exceptionBlocks) {
+}

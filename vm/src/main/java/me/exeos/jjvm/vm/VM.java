@@ -1,17 +1,20 @@
 package me.exeos.jjvm.vm;
 
-import me.exeos.jjvm.shared.helpers.ByteHelper;
-import me.exeos.jjvm.vm.helpers.DescriptorHelper;
 import me.exeos.jjvm.shared.bytecode.OpCodes;
+import me.exeos.jjvm.shared.exception.ExceptionBlock;
+import me.exeos.jjvm.shared.helpers.ByteHelper;
+import me.exeos.jjvm.shared.memory.TypedValue;
+import me.exeos.jjvm.shared.type.TypeCheckFunction;
+import me.exeos.jjvm.shared.type.Types;
+import me.exeos.jjvm.vm.helpers.DescriptorHelper;
+import me.exeos.jjvm.vm.helpers.ExceptionHelper;
 import me.exeos.jjvm.vm.locals.LocalStore;
 import me.exeos.jjvm.vm.memory.ConstantPool;
 import me.exeos.jjvm.vm.memory.Heap;
-import me.exeos.jjvm.shared.memory.TypedValue;
 import me.exeos.jjvm.vm.stack.TypedStack;
-import me.exeos.jjvm.shared.type.TypeCheckFunction;
-import me.exeos.jjvm.shared.type.Types;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.List;
 
@@ -20,7 +23,7 @@ public class VM {
     /**
      * Execute Method. Frames out of this methods scope can't use its stack.
      */
-    public static <T> T exec(byte[] bytecode, int maxStackSize, int maxStackEntries, int maxLocals, Class<T> returnType, List<TypedValue> constants) {
+    public static <T> T exec(byte[] bytecode, int maxStackSize, int maxStackEntries, int maxLocals, Class<T> returnType, List<TypedValue> constants, List<ExceptionBlock> exceptionBlocks) throws Throwable {
 
         ConstantPool cp = new ConstantPool(constants);
         Heap heap = new Heap();
@@ -29,10 +32,12 @@ public class VM {
 
         int pc = 0;
         while (pc < bytecode.length) {
+            int insnPc = pc;
             int byteToInterpret = bytecode[pc++] & 0xFF;
 
             switch (byteToInterpret) {
-                case OpCodes.NOP -> {}
+                case OpCodes.NOP -> {
+                }
                 case OpCodes.POP -> stack.pop();
                 case OpCodes.DUP -> stack.dup();
                 case OpCodes.LOC_STORE -> {
@@ -110,16 +115,21 @@ public class VM {
                     try {
                         Class<?> clazz = Class.forName(owner.replace('/', '.'));
                         Method method = clazz.getMethod(member, methodDescriptor.parameterDescriptor());
+                        Object[] params = new Object[methodDescriptor.parameterDescriptor().length];
+                        for (int i = params.length - 1; i >= 0; i--) {
+                            params[i] = stack.popJVMType(cp, heap);
+                        }
+
                         try {
-                            Object[] params = new Object[methodDescriptor.parameterDescriptor().length];
-                            for (int i = params.length - 1; i >= 0; i--) {
-                                params[i] = stack.popJVMType(cp, heap);
+                            Object value = method.invoke(null, params);
+                            if (methodDescriptor.returnDescriptor() != void.class) {
+                                stack.pushJVMType(value, heap);
                             }
 
-                            method.invoke(null, params);
+                        } catch (InvocationTargetException invocationTargetException) {
+                            pc = ExceptionHelper.handle(invocationTargetException.getTargetException(), (short) insnPc, exceptionBlocks, stack, heap);
                         } catch (Exception e) {
-                            System.out.println("Invoked method threw Exception. This currently does not affect the control flow!");
-                            e.printStackTrace();
+                            throw new RuntimeException("Failed to invoke virtual method. Owner=" + owner + " Member=" + member + " Descriptor=" + descriptor, e);
                         }
                     } catch (ClassNotFoundException | NoSuchMethodException e) {
                         throw new RuntimeException("Can't find Class or Method to invoke");
@@ -135,28 +145,37 @@ public class VM {
 
                     DescriptorHelper.MethodDescriptor methodDescriptor = DescriptorHelper.parseMethodDescriptor(descriptor);
 
+                    Class<?> clazz;
+                    Method method;
+
                     try {
-                        Class<?> clazz = Class.forName(owner.replace('/', '.'));
-                        Method method = clazz.getMethod(member, methodDescriptor.parameterDescriptor());
-                        try {
-                            Object[] params = new Object[methodDescriptor.parameterDescriptor().length];
-                            for (int i = params.length - 1; i >= 0; i--) {
-                                params[i] = stack.popJVMType(cp, heap);
-                            }
-
-                            Object object = switch (stack.type()) {
-                                case Types.HEAP_REF -> heap.getRefValue(Types.OBJECT, stack.popI64());
-                                case Types.CP_REF -> cp.getConstant(Types.OBJECT, stack.popI16());
-                                default -> throw new IllegalStateException("Invalid stack type for invoke_virtual. Type: " + stack.type());
-                            };
-
-                            method.invoke(object, params);
-                        } catch (Exception e) {
-                            System.out.println("Invoked method threw Exception. This currently does not affect the control flow!");
-                            e.printStackTrace();
-                        }
+                        clazz = Class.forName(owner.replace('/', '.'));
+                        method = clazz.getMethod(member, methodDescriptor.parameterDescriptor());
                     } catch (ClassNotFoundException | NoSuchMethodException e) {
-                        throw new RuntimeException("Can't find Class or Method to invoke");
+                        throw new RuntimeException("Failed to reflect Class or Method to invoke. Owner=" + owner + " Member=" + member);
+                    }
+
+                    Object[] params = new Object[methodDescriptor.parameterDescriptor().length];
+                    for (int i = params.length - 1; i >= 0; i--) {
+                        params[i] = stack.popJVMType(cp, heap);
+                    }
+
+                    Object object = switch (stack.type()) {
+                        case Types.HEAP_REF -> heap.getRefValue(Types.OBJECT, stack.popI64());
+                        case Types.CP_REF -> cp.getConstant(Types.OBJECT, stack.popI16());
+                        default ->
+                                throw new IllegalStateException("Invalid stack type for invoke_virtual. Type: " + stack.type());
+                    };
+
+                    try {
+                        Object value = method.invoke(object, params);
+                        if (methodDescriptor.returnDescriptor() != void.class) {
+                            stack.pushJVMType(value, heap);
+                        }
+                    } catch (InvocationTargetException invocationTargetException) {
+                        pc = ExceptionHelper.handle(invocationTargetException.getTargetException(), (short) insnPc, exceptionBlocks, stack, heap);
+                    } catch (Exception e) {
+                        throw new RuntimeException("Failed to invoke virtual method. Owner=" + owner + " Member=" + member + " Descriptor=" + descriptor, e);
                     }
                 }
                 case OpCodes.LDC -> {
@@ -221,11 +240,16 @@ public class VM {
                     stack.ensureType(type -> type >= Types.INT_8 && type <= Types.INT_32);
 
                     long heapRef = switch (arrType) {
-                        case Types.BOOL -> heap.createRef(arrType, new boolean[ByteHelper.bytesToInt32Flexible(stack.pop())]);
-                        case Types.INT_8 -> heap.createRef(arrType, new byte[ByteHelper.bytesToInt32Flexible(stack.pop())]);
-                        case Types.INT_16 -> heap.createRef(arrType, new short[ByteHelper.bytesToInt32Flexible(stack.pop())]);
-                        case Types.INT_32 -> heap.createRef(arrType, new int[ByteHelper.bytesToInt32Flexible(stack.pop())]);
-                        case Types.INT_64, Types.OBJECT -> heap.createRef(arrType, new long[ByteHelper.bytesToInt32Flexible(stack.pop())]);
+                        case Types.BOOL ->
+                                heap.createRef(arrType, new boolean[ByteHelper.bytesToInt32Flexible(stack.pop())]);
+                        case Types.INT_8 ->
+                                heap.createRef(arrType, new byte[ByteHelper.bytesToInt32Flexible(stack.pop())]);
+                        case Types.INT_16 ->
+                                heap.createRef(arrType, new short[ByteHelper.bytesToInt32Flexible(stack.pop())]);
+                        case Types.INT_32 ->
+                                heap.createRef(arrType, new int[ByteHelper.bytesToInt32Flexible(stack.pop())]);
+                        case Types.INT_64, Types.OBJECT ->
+                                heap.createRef(arrType, new long[ByteHelper.bytesToInt32Flexible(stack.pop())]);
                         default -> throw new IllegalStateException("Invalid Type: " + arrType);
                     };
 
@@ -242,7 +266,7 @@ public class VM {
                     int arrayIndex = ByteHelper.bytesToInt32Flexible(stack.pop());
 
                     stack.ensureType(type -> type == Types.S_ARRAY_REF);
-                    long arrayHeapRef  = stack.popI64();
+                    long arrayHeapRef = stack.popI64();
 
                     if (arrayType != heap.getRefType(arrayHeapRef)) {
                         throw new IllegalStateException("Array type mismatch.");
@@ -342,11 +366,12 @@ public class VM {
 
                     int arrayLength = switch (arr) {
                         case boolean[] a -> a.length;
-                        case byte[] a    -> a.length;
-                        case short[] a   -> a.length;
-                        case int[] a     -> a.length;
-                        case long[] a    -> a.length;
-                        default -> throw new IllegalStateException("Heap ref is not an array. ref=" + arrayRef + " valueType=" + arr.getClass());
+                        case byte[] a -> a.length;
+                        case short[] a -> a.length;
+                        case int[] a -> a.length;
+                        case long[] a -> a.length;
+                        default ->
+                                throw new IllegalStateException("Heap ref is not an array. ref=" + arrayRef + " valueType=" + arr.getClass());
                     };
 
                     stack.push(ByteHelper.int32ToBytes(arrayLength), Types.INT_32);
@@ -365,6 +390,17 @@ public class VM {
                     Object value = stack.popJVMType(cp, heap);
 
                     return returnType.cast(value);
+                }
+                case OpCodes.THROW -> {
+                    stack.ensureHeight(1);
+                    stack.ensureType(type -> type == Types.HEAP_REF);
+
+                    Object potentialThrowable = stack.popJVMType(cp, heap);
+                    if (potentialThrowable instanceof Throwable throwable) {
+                        pc = ExceptionHelper.handle(throwable, (short) insnPc, exceptionBlocks, stack, heap);
+                    } else {
+                        throw new IllegalStateException("Can't throw object that is not an instance of " + Throwable.class.getName());
+                    }
                 }
                 default -> throw new IllegalStateException("Invalid OPCODE: " + byteToInterpret);
             }

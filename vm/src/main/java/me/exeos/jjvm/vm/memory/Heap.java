@@ -1,14 +1,19 @@
 package me.exeos.jjvm.vm.memory;
 
-import java.util.HashMap;
 import me.exeos.jjvm.shared.memory.TypedValue;
+import me.exeos.jjvm.shared.type.Types;
+
+import java.util.HashMap;
 
 public class Heap {
-    
+
     private final HashMap<Long, TypedValue> heap = new HashMap<>();
     long heapIndex = 0;
 
     public <T> long createRef(byte type, T value) {
+        if (type == Types.HEAP_REF || type == Types.CP_REF) {
+            throw new RuntimeException("Illegal heap type: " + type);
+        }
         heap.put(heapIndex++, new TypedValue<T>(type, value));
 
         return heapIndex - 1;
