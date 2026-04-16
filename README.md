@@ -68,6 +68,7 @@ objectref's are internally represented by heapref -> Ref with type Object
 | `loc_store`      | `17 (0x11)` | `index(u1)`                   | `..., value → ...`                  |
 | `loc_load`       | `16 (0x10)` | `index(u1)`                   | `... → ..., value`                  |
 | `return`         | `18 (0x12)` |                               | `... → ...`                         |
+| `throw`          | `21 (0x15)` |                               | `..., objectref → objectref`        |
 
 ---
 
