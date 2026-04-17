@@ -46,6 +46,13 @@ public class Assembler {
         // generate bytecode and create constant pool
         for (AbstractInstruction instruction : instructions) {
             switch (instruction) {
+                case CastInstruction castInstruction -> {
+                    code.add(castInstruction.opcode);
+
+                    short cpIndex = cpBuilder.register(castInstruction.castTarget);
+
+                    Collections.addAll(code, ArrayUtils.toObject(ByteHelper.int16ToBytes(cpIndex)));
+                }
                 case GetStaticInstruction getStaticInstruction -> {
                     code.add(getStaticInstruction.opcode);
 

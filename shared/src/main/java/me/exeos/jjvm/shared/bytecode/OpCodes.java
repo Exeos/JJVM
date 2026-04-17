@@ -34,4 +34,5 @@ public class OpCodes {
     public static final byte RETURN = 0x12;
 
     public static final byte THROW = 0x15;
+    public static final byte CAST = 0x16;
 }

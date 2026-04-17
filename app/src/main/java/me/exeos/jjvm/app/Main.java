@@ -52,6 +52,7 @@ public class Main {
                 innerEnd,
                 new GotoInstruction(innerHandlerEnd),
                 innerHandler,
+                new CastInstruction("java/lang/Object"),
                 new InvokeVirtualInstruction("java/lang/Throwable", "printStackTrace", "()V"),
                 innerHandlerEnd,
                 handlerEnd

@@ -179,7 +179,7 @@ public class VM {
                     }
                 }
                 case OpCodes.LDC -> {
-                    ensureAvailable(bytecode, pc, 3);
+                    ensureAvailable(bytecode, pc, 2);
 
                     short index = ByteHelper.bytesToInt16(extractOperands(bytecode, pc, 2));
                     pc += 2;
@@ -401,6 +401,19 @@ public class VM {
                     } else {
                         throw new IllegalStateException("Can't throw object that is not an instance of " + Throwable.class.getName());
                     }
+                }
+                case OpCodes.CAST -> {
+                    ensureAvailable(bytecode, pc, 2);
+                    stack.ensureMinHeight(1);
+
+                    short cpIndex = ByteHelper.bytesToInt16(extractOperands(bytecode, pc, 2));
+
+                    String castTarget = cp.getConstant(Types.OBJECT, cpIndex);
+
+                    Object stackTop = stack.popJVMType(cp, heap);
+                    stack.pushJVMType(Class.forName(castTarget.replace("/", ".")).cast(stackTop), heap);
+
+                    pc += 2;
                 }
                 default -> throw new IllegalStateException("Invalid OPCODE: " + byteToInterpret);
             }
