@@ -129,6 +129,12 @@ public class TypedStack {
             case Types.INT_64 -> {
                 return ByteHelper.bytesToInt64(pop());
             }
+            case Types.DOUBLE -> {
+                return ByteHelper.bytesToDouble(pop());
+            }
+            case Types.FLOAT -> {
+                return ByteHelper.bytesToFloat(pop());
+            }
             case Types.CP_REF -> {
                 short index = popI16();
 

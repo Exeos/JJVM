@@ -69,6 +69,13 @@ objectref's are internally represented by heapref -> Ref with type Object
 | `loc_load`       | `16 (0x10)` | `index(u1)`                   | `... → ..., value`                  |
 | `return`         | `18 (0x12)` |                               | `... → ...`                         |
 | `throw`          | `21 (0x15)` |                               | `..., objectref → objectref`        |
+| `cast`           | `22 (0x16)` | `index(u2)`                   | `..., objectref → ..., objectref`   |
+| `d2f`            | `23 (0x17)` |                               | `..., value → ..., result`          |
+| `d2i32`          | `24 (0x18)` |                               | `..., value → ..., result`          |
+| `d2i64`          | `25 (0x19)` |                               | `..., value → ..., result`          |
+| `f2d`            | `26 (0x1A)` |                               | `..., value → ..., result`          |
+| `f2i32`          | `27 (0x1B)` |                               | `..., value → ..., result`          |
+| `f2i64`          | `28 (0x1C)` |                               | `..., value → ..., result`          |
 
 ---
 
@@ -390,13 +397,95 @@ Returns top of stack if return type is not void. If void, just returns.
 > **Operands:** \
 > **Stack:** `..., objectref → objectref`
 
-Throws object on top of the stack, exception handling applies.
+---
+
+### `cast`
+
+> **Opcode:** `22 (0x16)`  \
+> **Operands:** `index(u2)` \
+> **Stack:** `..., objectref → ..., objectref`
+
+Casts the Object on top of the Stack to class with name stored in CP at index
 
 **Possible errors**
 
-- Stack underflow if the stack is empty.
-- Invalid stack type
-- Many more
+- Can't find class
+
+---
+
+### `d2f`
+
+> **Opcode:** `23 (0x17)`  \
+> **Operands:** \
+> **Stack:** `..., value → ..., result`
+
+Convert double to float
+
+**Possible errors**
+
+- Stack type mismatch
+
+---
+
+### `d2i32`
+
+> **Opcode:** `24 (0x18)`  \
+> **Operands:** \
+> **Stack:** `..., value → ..., result`
+
+Convert double to int32
+
+**Possible errors**
+
+- Stack type mismatch
+
+### `d2i64`
+
+> **Opcode:** `25 (0x19)`  \
+> **Operands:** \
+> **Stack:** `..., value → ..., result`
+
+Convert double to int64
+
+**Possible errors**
+
+- Stack type mismatch
+
+### `f2d`
+
+> **Opcode:** `26 (0x1A)`  \
+> **Operands:** \
+> **Stack:** `..., value → ..., result`
+
+Convert float to double
+
+**Possible errors**
+
+- Stack type mismatch
+
+### `f2i32`
+
+> **Opcode:** `27 (0x1B)`  \
+> **Operands:** \
+> **Stack:** `..., value → ..., result`
+
+Convert float to int32
+
+**Possible errors**
+
+- Stack type mismatch
+
+### `f2i64`
+
+> **Opcode:** `28 (0x1C)`  \
+> **Operands:** \
+> **Stack:** `..., value → ..., result`
+
+Convert float to int64
+
+**Possible errors**
+
+- Stack type mismatch
 
 ---
 

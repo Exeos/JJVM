@@ -34,5 +34,12 @@ public class OpCodes {
     public static final byte RETURN = 0x12;
 
     public static final byte THROW = 0x15;
+
     public static final byte CAST = 0x16;
+    public static final byte D2F = 0x17;
+    public static final byte D2I32 = 0x18;
+    public static final byte D2I64 = 0x19;
+    public static final byte F2D = 0x1A;
+    public static final byte F2I32 = 0x1B;
+    public static final byte F2I64 = 0x1C;
 }

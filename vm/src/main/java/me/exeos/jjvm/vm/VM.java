@@ -192,6 +192,8 @@ public class VM {
                         case Types.INT_16 -> stack.push(ByteHelper.int16ToBytes(cp.getConstant(type, index)), type);
                         case Types.INT_32 -> stack.push(ByteHelper.int32ToBytes(cp.getConstant(type, index)), type);
                         case Types.INT_64 -> stack.push(ByteHelper.int64ToBytes(cp.getConstant(type, index)), type);
+                        case Types.DOUBLE -> stack.push(ByteHelper.doubleToBytes(cp.getConstant(type, index)), type);
+                        case Types.FLOAT -> stack.push(ByteHelper.floatToBytes(cp.getConstant(type, index)), type);
                         case Types.OBJECT -> stack.push(ByteHelper.int16ToBytes(index), Types.CP_REF);
                         default -> throw new IllegalStateException("Invalid Type: " + type);
                     }
@@ -414,6 +416,48 @@ public class VM {
                     stack.pushJVMType(Class.forName(castTarget.replace("/", ".")).cast(stackTop), heap);
 
                     pc += 2;
+                }
+                case OpCodes.D2F -> {
+                    stack.ensureMinHeight(1);
+                    stack.ensureType(type -> type == Types.DOUBLE);
+
+                    float converted = (float) ByteHelper.bytesToDouble(stack.pop());
+                    stack.push(ByteHelper.floatToBytes(converted), Types.FLOAT);
+                }
+                case OpCodes.D2I32 -> {
+                    stack.ensureMinHeight(1);
+                    stack.ensureType(type -> type == Types.DOUBLE);
+
+                    int converted = (int) ByteHelper.bytesToDouble(stack.pop());
+                    stack.push(ByteHelper.int32ToBytes(converted), Types.INT_32);
+                }
+                case OpCodes.D2I64 -> {
+                    stack.ensureMinHeight(1);
+                    stack.ensureType(type -> type == Types.DOUBLE);
+
+                    long converted = (long) ByteHelper.bytesToDouble(stack.pop());
+                    stack.push(ByteHelper.int64ToBytes(converted), Types.INT_64);
+                }
+                case OpCodes.F2D -> {
+                    stack.ensureMinHeight(1);
+                    stack.ensureType(type -> type == Types.FLOAT);
+
+                    double converted = ByteHelper.bytesToFloat(stack.pop());
+                    stack.push(ByteHelper.doubleToBytes(converted), Types.DOUBLE);
+                }
+                case OpCodes.F2I32 -> {
+                    stack.ensureMinHeight(1);
+                    stack.ensureType(type -> type == Types.FLOAT);
+
+                    int converted = (int) ByteHelper.bytesToFloat(stack.pop());
+                    stack.push(ByteHelper.int32ToBytes(converted), Types.INT_32);
+                }
+                case OpCodes.F2I64 -> {
+                    stack.ensureMinHeight(1);
+                    stack.ensureType(type -> type == Types.FLOAT);
+
+                    long converted = (long) ByteHelper.bytesToFloat(stack.pop());
+                    stack.push(ByteHelper.int64ToBytes(converted), Types.INT_64);
                 }
                 default -> throw new IllegalStateException("Invalid OPCODE: " + byteToInterpret);
             }
